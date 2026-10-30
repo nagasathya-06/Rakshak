@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Project Rakshak - 3D Street Digital Twin</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #05080f;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      color: #e2e8f0;
+    }
+
+    .panel {
+      position: fixed;
+      background: rgba(8, 13, 26, 0.88);
+      border: 1px solid #1e293b;
+      backdrop-filter: blur(8px);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      line-height: 1.5;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+    }
+
+    #ctl {
+      top: 10px;
+      left: 10px;
+      width: 270px;
+    }
+
+    #ctl label {
+      display: block;
+      margin-top: 6px;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    #ctl input[type=range] {
+      width: 100%;
+      accent-color: #38bdf8;
+    }
+
+    #ctl select {
+      width: 100%;
+      padding: 5px 8px;
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 6px;
+    }
+
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: 0;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 11px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    button.alt {
+      background: #334155;
+    }
+
+    button.alt:hover {
+      background: #475569;
+    }
+
+    #fq {
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      min-width: 380px;
+    }
+
+    #hz {
+      font: 800 38px Consolas, monospace;
+      letter-spacing: -0.5px;
+    }
+
+    #rocof-badge {
+      display: inline-block;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: #1e293b;
+      margin-top: 2px;
+    }
+
+    #tm {
+      color: #94a3b8;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    #msg {
+      margin-top: 4px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    #stat {
+      top: 10px;
+      right: 10px;
+      width: 290px;
+    }
+
+    #stat table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 11px;
+    }
+
+    #stat td {
+      padding: 3px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    #stat td:last-child {
+      text-align: right;
+      font-weight: 700;
+      font-family: Consolas, monospace;
+    }
+
+    #charts {
+      bottom: 10px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    canvas.ch {
+      display: block;
+      background: #0b1220;
+      border-radius: 6px;
+      border: 1px solid #1e293b;
+    }
+
+    #info {
+      bottom: 10px;
+      right: 10px;
+      width: 320px;
+    }
+
+    #info .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 3px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .chip {
+      font-size: 9px;
+      padding: 1px 6px;
+      border-radius: 6px;
+      color: #000;
+      margin-left: 4px;
+      font-weight: 700;
+    }
+
+    #log {
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 420px;
+      font: 11px Consolas, monospace;
+      color: #cbd5e1;
+      min-height: 44px;
+      background: rgba(8, 13, 26, 0.92);
+    }
+
+    .lbl {
+      position: fixed;
+      transform: translate(-50%, -50%);
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(2, 6, 23, 0.85);
+      border: 1px solid;
+      pointer-events: none;
+    }
+
+    .hil-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #0f766e;
+      color: #5eead4;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .mode-indicator {
+      font-size: 10px;
+      color: #38bdf8;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="panel" id="ctl">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-weight:800; font-size:14px; color:#38bdf8">⚡ PROJECT RAKSHAK</div>
+      <span class="mode-indicator" id="conn-mode">STANDALONE</span>
+    </div>
+    <div style="color:#94a3b8; font-size:11px;">Edge-Intelligent Grid Resilience (SDG 11)</div>
+    <div class="hil-badge" id="hil-status">HIL Bridge: Ready (Phase-3 ESP32)</div>
+
+    <label>Scenario / Protection Strategy
+      <select id="mode">
+        <option value="none">1. No Protection (Cascading Blackout)</option>
+        <option value="ufls">2. Substation UFLS (Feeder Tripping)</option>
+        <option value="smart" selected>3. Rakshak DR (MAC-Hash Staggered)</option>
+        <option value="smartns">4. Rakshak DR (No Staggering / Rebound)</option>
+      </select>
+    </label>
+
+    <label>Generation Loss: <b id="lossV">18</b>%
+      <input type="range" id="loss" min="5" max="30" value="18">
+    </label>
+
+    <label>Shed Threshold: <b id="thrV">49.60</b> Hz
+      <input type="range" id="thr" min="49.2" max="49.9" step="0.05" value="49.6">
+    </label>
+
+    <label>Plant Ramp Recovery at: <b id="trecV">45</b> s
+      <input type="range" id="trec" min="20" max="90" value="45">
+    </label>
+
+    <label>Grid Inertia (H): <b id="HV">5.0</b> s
+      <input type="range" id="H" min="3" max="8" step="0.5" value="5">
+    </label>
+
+    <label>Playback Speed
+      <select id="speed">
+        <option>1</option>
+        <option>2</option>
+        <option selected>3</option>
+        <option>5</option>
+        <option>10</option>
+      </select>
+    </label>
+
+    <div class="btns">
+      <button id="play">⏸ Pause</button>
+      <button class="alt" id="restart">⟲ Restart</button>
+      <button class="alt" id="home">🏙 Street View</button>
+      <button class="alt" id="focus">🔍 Look Inside</button>
+    </div>
+  </div>
+
+  <div class="panel" id="fq">
+    <div id="hz">50.00 Hz</div>
+    <div id="rocof-badge">RoCoF: 0.00 Hz/s</div>
+    <div id="tm"></div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="panel" id="stat"></div>
+
+  <div class="panel" id="charts">
+    <div style="font-weight:700; font-size:11px;">Grid Frequency (Hz)</div>
+    <canvas class="ch" id="cf" width="310" height="95"></canvas>
+    <div style="font-weight:700; font-size:11px;">Feeder Demand (1.0 = Pre-event Nominal)</div>
+    <canvas class="ch" id="cd" width="310" height="95"></canvas>
+  </div>
+
+  <div class="panel" id="info"></div>
+  <div class="panel" id="log"></div>
+  <div id="labels"></div>
+
+  <!-- Three.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const V3 = THREE.Vector3;
+    const TEND = 180, DT = 0.05, N = 12, T0 = 5, REC = 5;
+
+    /* ================= WEBSOCKET BACKEND CHECK ================= */
+    let ws = null, wsConnected = false;
+    try {
+      ws = new WebSocket("ws://localhost:8000/ws/telemetry");
+      ws.onopen = () => {
+        wsConnected = true;
+        $('conn-mode').textContent = "LIVE BACKEND";
+        $('conn-mode').style.color = "#4ade80";
+      };
+      ws.onerror = () => {
+        wsConnected = false;
+        $('conn-mode').textContent = "STANDALONE";
+      };
+    } catch(e) {
+      wsConnected = false;
+    }
+
+    /* ================= PHYSICS & DEVICE CATALOG ================= */
+    // Incorporating Oyefeso et al. (IEEE 2024): Lockout times & inrush decay
+    const DEV = [
+      { key: 'fridge', name: 'Refrigerator', w: 150, tier: 0, inr: 2.5, tau: 10, isComp: true, lockout: 15 },
+      { key: 'lights', name: 'LED Lights', w: 100, tier: 0, inr: 1, tau: 1, isComp: false, lockout: 0 },
+      { key: 'o2', name: 'Oxygen Concentrator', w: 300, tier: 0, inr: 1, tau: 1, isComp: false, lockout: 0 },
+      { key: 'fan', name: 'Ceiling Fan', w: 75, tier: 1, inr: 1.3, tau: 5, isComp: false, lockout: 0 },
+      { key: 'ac', name: 'Air Conditioner', w: 1500, tier: 2, inr: 3.0, tau: 15, isComp: true, lockout: 20 },
+      { key: 'heater', name: 'Water Heater', w: 2000, tier: 2, inr: 1.1, tau: 2, isComp: false, lockout: 0 },
+      { key: 'ev', name: 'EV Charger', w: 3300, tier: 2, inr: 1.0, tau: 1, isComp: false, lockout: 0 }
+    ];
+
+    const THO = [0, 0, 0, -0.8, -0.2, 0, 0.2];
+    const TIERN = ['CRITICAL', 'ESSENTIAL', 'DEFERRABLE'];
+    const TIERC = ['#22c55e', '#3b82f6', '#f97316'];
+    const NAMES = { none: 'No Protection', ufls: 'Conventional UFLS', smart: 'Rakshak DR (Staggered)', smartns: 'Rakshak DR (No Staggering)' };
+    const TNAME = { house: 'House', clinic: 'Clinic', shop: 'Shop', apartment: 'Apartment block' };
+    const TYPES = ['house', 'house', 'clinic', 'house', 'shop', 'house', 'house', 'apartment', 'house', 'house', 'house', 'house'];
+    const HGT = { house: 5, clinic: 6, shop: 5, apartment: 11 }, MULT = { house: 1, clinic: 2.5, shop: 1.5, apartment: 4 };
+    const COLS = { house: [0x8a6f5a, 0x6f8a7a, 0x7a6f8a, 0x8a7f5a], clinic: 0xb9c4cc, shop: 0x7d5a48, apartment: 0x5b6b80 };
+    const MED = [1, 3, 7, 9];
+    const STAGES = [49.2, 49.0, 48.8, 48.6], FORDER = [0, 2, 1, 3];
+
+    function rng32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+    function gauss(r) { return Math.sqrt(-2 * Math.log(r() + 1e-12)) * Math.cos(2 * Math.PI * r()); }
+    function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
+    const hex2 = n => ('0' + (n & 255).toString(16)).slice(-2).toUpperCase();
+
+    /* Device Class with Compressor Lockout Protection */
+    class Device {
+      constructor(k, own, want, mult) {
+        const d = DEV[k];
+        this.k = k; this.key = d.key; this.name = d.name; this.w = d.w * mult; this.tier = d.tier;
+        this.inr = d.inr; this.tau = d.tau; this.own = own; this.want = want;
+        this.on = true; this.tOn = -1e9; this.tOff = -1e9;
+        this.isComp = d.isComp;
+        this.lockoutDuration = d.lockout;
+        this.charge = 0.3;
+      }
+      turnOff(t) {
+        if (this.on) {
+          this.on = false;
+          this.tOff = t;
+        }
+      }
+      canTurnOn(t) {
+        if (this.isComp && (t - this.tOff) < this.lockoutDuration) {
+          return false;
+        }
+        return true;
+      }
+      turnOn(t) {
+        if (!this.canTurnOn(t)) return false;
+        this.on = true;
+        this.tOn = t;
+        return true;
+      }
+      powerW(t) {
+        return (this.want && this.on)
+          ? this.w * (1 + (this.inr - 1) * Math.exp(-(t - this.tOn) / this.tau))
+          : 0;
+      }
+    }
+
+    function buildCity() {
+      const r = rng32(7), B = [];
+      for (let i = 0; i < N; i++) {
+        const type = TYPES[i], side = i < 6 ? -1 : 1, o2 = type === 'clinic' || MED.includes(i);
+        let own = [true, true, o2, true, r() < .8, r() < .5, r() < .5];
+        let want = [true, true, o2, true, own[4] && r() < .9, own[5] && r() < .7, own[6] && r() < .8];
+        if (i === 1) { own = [true, true, true, true, true, true, true]; want = own.slice(); }
+        if (type === 'clinic') { own[5] = own[6] = want[5] = want[6] = false; own[4] = want[4] = true; }
+        const mult = MULT[type];
+        B.push({
+          i, type, side, x: -30 + 12 * (i % 6), z: side * 9.5, h: HGT[type], mult, feeder: Math.floor(i / 3), own, want, med: o2,
+          devs: DEV.map((d, k) => new Device(k, own[k], want[k], mult)), energized: true, p: 0,
+          off: gauss(r) * 0.01, jit: gauss(r) * 0.03,
+          mac: 'A4:CF:12:' + hex2(i * 37 + 11) + ':' + hex2(i * 91 + 7) + ':' + hex2(i * 53 + 3),
+          rt: Array(7).fill(0), rd: Array(7).fill(0)
+        });
+      }
+      return B;
+    }
+    const CITY0 = buildCity();
+
+    let S, P, mode = 'smart', sel = 1, playing = true, speed = 3, acc = 0;
+    function log(t, msg) { S.log.unshift('t=' + t.toFixed(1).padStart(5) + 's  ' + msg); if (S.log.length > 6) S.log.pop(); }
+
+    function reset() {
+      P = { loss: +$('loss').value / 100, thr: +$('thr').value, tRec: +$('trec').value, H: +$('H').value, ramp: 30, D: 1, head: 0.05, spread: 40 };
+      mode = $('mode').value;
+      const B = buildCity(); let base = 0; for (const b of B) for (const d of b.devs) if (d.want) base += d.w;
+      S = {
+        t: 0, x: 0, pg: 0, collapsed: false, B, fh: [], hf: [], hd: [], base, tShed: null, fired: [0, 0, 0, 0], under: [0, 0, 0, 0],
+        tripped: [false, false, false, false], log: [], f: 50, rocof: 0, pl: 1, M: { nadir: 50, recT: null, rocof: 0, black: 0, medMin: 0, critWh: 0, peak: 0 }
+      };
+      playing = true; acc = 0; $('play').textContent = '⏸ Pause';
+
+      if (wsConnected) {
+        ws.send(JSON.stringify({ action: "SET_PARAMS", loss: P.loss, trec: P.tRec, thr: P.thr, H: P.H }));
+        ws.send(JSON.stringify({ action: "SET_MODE", mode: mode === 'smart' ? 'rakshak' : (mode === 'smartns' ? 'rakshak_unstaggered' : mode) }));
+      }
+    }
+
+    /* ---- Conventional Feeder UFLS ---- */
+    function uflsStep(t, fd) {
+      for (let i = 0; i < 4; i++) if (!S.fired[i]) {
+        S.under[i] = fd < STAGES[i] ? S.under[i] + DT : 0;
+        if (S.under[i] >= 0.1) {
+          S.fired[i] = 1; S.tripped[FORDER[i]] = true;
+          for (const b of S.B) if (b.feeder === FORDER[i]) b.energized = false;
+          if (S.tShed === null) S.tShed = t;
+          log(t, 'UFLS Stage ' + (i + 1) + ' (' + STAGES[i] + ' Hz): FEEDER ' + (FORDER[i] + 1) + ' TRIPPED (3 buildings dark)');
+        }
+      }
+      if (t >= P.tRec + P.ramp + 5 && fd >= 49.9 && S.tripped.some(v => v)) {
+        for (const b of S.B) if (S.tripped[b.feeder]) {
+          b.energized = true;
+          for (const d of b.devs) d.turnOn(t);
+        }
+        S.tripped.fill(false); S.fired.fill(0); S.under.fill(0);
+        log(t, 'Substation operator restores all feeders at once');
+      }
+    }
+
+    /* ---- Rakshak Edge Agent (Decentralized + RoCoF Predictive Trigger) ---- */
+    function agentStep(b, t, fd, rocof) {
+      if (!b.energized) return;
+      const smart = mode === 'smart', fl = smart ? fd + b.off : fd;
+      const severeRoCoF = rocof < -0.50; // Predictive trip
+
+      for (let k = 3; k < 7; k++) { // Critical loads (k < 3) are strictly protected
+        const d = b.devs[k]; if (!d.want) continue;
+        const th = P.thr + THO[k] + (smart ? b.jit : 0);
+
+        if (d.on) {
+          // Trip if frequency drops below threshold OR severe RoCoF detects sudden drop
+          if (fl < th || (severeRoCoF && fl < 49.80 && d.tier === 2)) {
+            d.turnOff(t);
+            b.rt[k] = 0;
+            // MAC-hash delay algorithm
+            b.rd[k] = smart ? 2 + hash(b.mac + d.key) * P.spread : 0;
+            if (S.tShed === null) S.tShed = t;
+            if (b.i === sel) log(t, 'Agent #' + (b.i + 1) + ' SHED ' + d.name + ' (f=' + fl.toFixed(2) + ' Hz)');
+          }
+        } else if (fl >= th + 0.15) {
+          b.rt[k] += DT;
+          if (b.rt[k] >= b.rd[k]) {
+            if (d.turnOn(t)) {
+              if (b.i === sel) log(t, 'Agent #' + (b.i + 1) + ' restored ' + d.name + ' after ' + b.rd[k].toFixed(0) + 's delay');
+            }
+          }
+        }
+      }
+    }
+
+    function stepSim() {
+      const t = S.t, f = S.collapsed ? 47.5 : 50 * (1 + S.x);
+      S.fh.push(f);
+      const idx = S.fh.length - 1;
+      const fd = S.fh[Math.max(0, idx - 2)];
+
+      // RoCoF calculation over 250ms window
+      let rocof = 0;
+      if (idx >= 5) {
+        rocof = (f - S.fh[idx - 5]) / (5 * DT);
+      }
+      S.rocof = rocof;
+
+      if (Math.abs(t - T0) < DT / 2) log(t, 'Generation loss: ' + Math.round(P.loss * 100) + '% of supply tripped');
+      if (Math.abs(t - P.tRec) < DT / 2) log(t, 'Lost generation starts ramping back');
+
+      if (!S.collapsed) {
+        if (mode === 'ufls') uflsStep(t, fd);
+        else if (mode === 'smart' || mode === 'smartns') for (const b of S.B) agentStep(b, t, fd, rocof);
+      }
+
+      let pw = 0;
+      for (const b of S.B) {
+        let p = 0;
+        if (b.energized && !S.collapsed) {
+          for (const d of b.devs) p += d.powerW(t);
+          const ev = b.devs[6]; if (ev.want && ev.on) ev.charge = Math.min(1, ev.charge + DT * 0.003);
+        }
+        b.p = p; pw += p;
+      }
+      const pl = pw / S.base;
+      const pset = t < T0 ? 1 : (t < P.tRec ? 1 - P.loss : Math.min(1, 1 - P.loss + P.loss * (t - P.tRec) / P.ramp));
+
+      if (!S.collapsed) {
+        const tgt = Math.max(-0.3, Math.min(P.head, -S.x / 0.05));
+        S.pg += (tgt - S.pg) * DT / 0.5;
+        // Numerical integration of swing equation
+        S.x += DT * (pset + S.pg - pl - P.D * S.x) / (2 * P.H);
+        if (50 * (1 + S.x) < 47.5) {
+          S.collapsed = true; S.x = -0.05;
+          log(t, 'f < 47.5 Hz: generators trip - CASCADING BLACKOUT');
+        }
+      }
+
+      if (t >= T0) {
+        const M = S.M;
+        if (f < M.nadir) { M.nadir = f; M.recT = null; }
+        if (M.recT === null && M.nadir < 49.9 && f >= 49.9 && t > T0 + 0.5) M.recT = t - T0;
+        if (idx >= 10) M.rocof = Math.max(M.rocof, Math.abs(rocof));
+        if (S.tShed !== null && t >= S.tShed + 5 && !S.collapsed) M.peak = Math.max(M.peak, pl);
+        let blk = 0;
+        for (const b of S.B) {
+          if (!(b.energized && !S.collapsed)) {
+            blk++; let cw = 0; for (let k = 0; k < 3; k++) if (b.devs[k].want) cw += b.devs[k].w;
+            M.critWh += cw * DT / 3600; if (b.med) M.medMin += DT / 60;
+          }
+        }
+        M.black = Math.max(M.black, blk);
+      }
+
+      if (idx % REC === 0) { S.hf.push(f); S.hd.push(pl); }
+      S.f = f; S.pl = pl; S.t += DT;
+    }
+
+    /* ================= 3D SCENE GRAPH ================= */
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x05080f); scene.fog = new THREE.Fog(0x05080f, 70, 190);
+    const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.5, 500);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio || 1); renderer.setSize(innerWidth, innerHeight);
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.domElement.style.cssText = 'position:fixed;inset:0'; document.body.prepend(renderer.domElement);
+    const cv = renderer.domElement;
+
+    scene.add(new THREE.AmbientLight(0x4a5a80, 0.6));
+    const moon = new THREE.DirectionalLight(0x8fa8ff, 0.5); moon.position.set(-30, 50, 30); moon.castShadow = true;
+    moon.shadow.mapSize.set(2048, 2048);
+    Object.assign(moon.shadow.camera, { left: -60, right: 60, top: 45, bottom: -45, near: 1, far: 160 }); moon.shadow.camera.updateProjectionMatrix();
+    scene.add(moon);
+
+    const M = (c, o) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: .8 }, o || {}));
+    const BM = c => new THREE.MeshBasicMaterial({ color: c });
+    function plane(w, h, mat, x, y, z) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); m.rotation.x = -Math.PI / 2; m.position.set(x, y, z); m.receiveShadow = true; scene.add(m); return m; }
+    plane(300, 220, M(0x0f1d14, { roughness: 1 }), 0, 0, 0);
+    plane(110, 8, M(0x1c1e24), 0, .02, 0);
+    plane(110, 2, M(0x3a3d45), 0, .03, -5); plane(110, 2, M(0x3a3d45), 0, .03, 5);
+    for (let x = -50; x <= 50; x += 6) plane(3, .2, BM(0xcbb64a), x, .04, 0);
+
+    /* Street Lighting */
+    const lampMat = BM(0xffd58a), poolMat = new THREE.MeshBasicMaterial({ color: 0xffd58a, transparent: true, opacity: .2, blending: THREE.AdditiveBlending, depthWrite: false });
+    for (let k = 0; k < 7; k++) for (const s of [-1, 1]) {
+      const x = -36 + 12 * k, z = s * 4.6;
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(.08, .1, 6.5, 8), M(0x30353f)); pole.position.set(x, 3.25, z); pole.castShadow = true; scene.add(pole);
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(.12, .12, 1.4), M(0x30353f)); arm.position.set(x, 6.5, z - s * .7); scene.add(arm);
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(.3, 10, 10), lampMat); bulb.position.set(x, 6.4, z - s * 1.3); scene.add(bulb);
+      const pool = new THREE.Mesh(new THREE.CircleGeometry(4.5, 24), poolMat); pool.rotation.x = -Math.PI / 2; pool.position.set(x, .05, z - s * 1.3); scene.add(pool);
+    }
+
+    /* Substation Transformer Pole */
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(.15, .2, 9.5, 8), M(0x4a3b2c)); pole.position.set(0, 4.75, -9); pole.castShadow = true; scene.add(pole);
+    const xarm = new THREE.Mesh(new THREE.BoxGeometry(2.8, .15, .15), M(0x4a3b2c)); xarm.position.set(0, 9, -9); scene.add(xarm);
+    const trafo = new THREE.Mesh(new THREE.CylinderGeometry(.55, .55, 1.3, 16), M(0x8b95a1)); trafo.position.set(0, 7.3, -9); trafo.castShadow = true; scene.add(trafo);
+    const trafoLed = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 8), BM(0x38bdf8)); trafoLed.position.set(0, 8.1, -8.5); scene.add(trafoLed);
+
+    /* Patient Bedside Vital Monitor (ECG Canvas) */
+    const ecgC = document.createElement('canvas'); ecgC.width = 256; ecgC.height = 150; const ecgX = ecgC.getContext('2d'); const ecgTex = new THREE.CanvasTexture(ecgC);
+    function drawEcg(run, t) {
+      ecgX.fillStyle = '#020617'; ecgX.fillRect(0, 0, 256, 150); ecgX.lineWidth = 2.5; ecgX.beginPath();
+      if (run) {
+        ecgX.strokeStyle = '#22c55e';
+        for (let px = 0; px < 256; px++) {
+          const u = ((px / 256) * 2 + t * 1.2) % 1; let y = 0;
+          if (u > .40 && u < .44) y = -40 * (1 - Math.abs(u - .42) / .02);
+          else if (u > .44 && u < .48) y = 20 * (1 - Math.abs(u - .46) / .02);
+          else if (u > .60 && u < .68) y = -9 * Math.sin((u - .6) / .08 * Math.PI);
+          px ? ecgX.lineTo(px, 60 + y) : ecgX.moveTo(px, 60 + y);
+        }
+        ecgX.stroke(); ecgX.fillStyle = '#22c55e'; ecgX.font = 'bold 20px Consolas,monospace'; ecgX.fillText('SpO2 98%  HR 72', 10, 130);
+      } else {
+        ecgX.strokeStyle = '#ef4444'; ecgX.moveTo(0, 60); ecgX.lineTo(256, 60); ecgX.stroke();
+        ecgX.fillStyle = '#ef4444'; ecgX.font = 'bold 22px Consolas,monospace'; ecgX.fillText('CRITICAL: NO POWER', 25, 130);
+      }
+      ecgTex.needsUpdate = true;
+    }
+
+    /* Buildings */
+    const V = [], bodies = [];
+    function makeBuilding(b) {
+      const v = {}, g = new THREE.Group(); g.position.set(b.x, 0, b.z); if (b.side > 0) g.rotation.y = Math.PI; scene.add(g); v.g = g;
+      const W = 8, D = 7, H = b.h, IH = Math.min(H, 5); v.IH = IH;
+      v.bodyMat = M(b.type === 'house' ? COLS.house[b.i % 4] : COLS[b.type]);
+      const body = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), v.bodyMat); body.position.y = H / 2; body.castShadow = true; body.receiveShadow = true; body.userData.idx = b.i; g.add(body); bodies.push(body);
+      v.roofMat = M(0x2b2f3a);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(W + .5, .4, D + .5), v.roofMat); roof.position.y = H + .2; roof.castShadow = true; g.add(roof);
+
+      const fa = new THREE.Group(); g.add(fa); v.facade = fa;
+      v.winMat = BM(0xffd27a);
+      const rows = Math.max(1, Math.floor(H / 3.3));
+      for (let f = 0; f < rows; f++) for (const x of (f === 0 ? [-2.4, 2.4] : [-2.4, 0, 2.4])) {
+        const w = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.5), v.winMat); w.position.set(x, 2.6 + f * 3.3, D / 2 + .02); fa.add(w);
+      }
+      const door = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.2, .15), M(0x3b2a1e)); door.position.set(0, 1.1, D / 2 + .05); fa.add(door);
+      if (b.type === 'clinic') {
+        v.signMat = BM(0x22dd77);
+        const a = new THREE.Mesh(new THREE.BoxGeometry(1.1, .3, .1), v.signMat), c = new THREE.Mesh(new THREE.BoxGeometry(.3, 1.1, .1), v.signMat);
+        a.position.set(0, 3.5, D / 2 + .1); c.position.set(0, 3.5, D / 2 + .1); fa.add(a); fa.add(c);
+      }
+      if (b.type === 'shop') { v.signMat = BM(0xffb347); const s = new THREE.Mesh(new THREE.BoxGeometry(4, .7, .15), v.signMat); s.position.set(0, 3.6, D / 2 + .1); fa.add(s); }
+
+      v.light = new THREE.PointLight(0xffc870, 1.1, 26, 2); v.light.position.set(0, 3.5, D / 2 + 3); g.add(v.light);
+
+      /* Rooftop AC unit with spinning fan */
+      if (b.own[4]) {
+        const u = new THREE.Group(); u.position.set(2.2, H + .4, -1); g.add(u);
+        const bx = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.1, 1.8), M(0x9aa4b0)); bx.position.y = .55; bx.castShadow = true; u.add(bx);
+        const disc = new THREE.Mesh(new THREE.CircleGeometry(.65, 20), BM(0x0e1116)); disc.rotation.x = -Math.PI / 2; disc.position.y = 1.105; u.add(disc);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(.66, .05, 8, 24), M(0x333a44)); ring.rotation.x = Math.PI / 2; ring.position.y = 1.12; u.add(ring);
+        const fg = new THREE.Group(); fg.position.y = 1.13; u.add(fg);
+        for (let k = 0; k < 3; k++) { const h = new THREE.Group(); h.rotation.y = k * Math.PI * 2 / 3; const bl = new THREE.Mesh(new THREE.BoxGeometry(.6, .03, .22), BM(0xb8c0cc)); bl.position.x = .32; h.add(bl); fg.add(h); }
+        v.acFan = fg; v.acOm = 0;
+      }
+
+      /* Life-safety / medical cross marker */
+      if (b.med) {
+        v.crossMat = BM(0xff5fa8); const c = new THREE.Group(); c.position.set(0, H + 3.4, 0);
+        c.add(new THREE.Mesh(new THREE.BoxGeometry(1.6, .5, .5), v.crossMat)); c.add(new THREE.Mesh(new THREE.BoxGeometry(.5, 1.6, .5), v.crossMat)); g.add(c); v.cross = c;
+      }
+
+      /* Interior (shown on focus) */
+      const I = new THREE.Group(); I.visible = false; g.add(I); v.int = I;
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(W - .5, D - .5), M(0x8b7a62)); floor.rotation.x = -Math.PI / 2; floor.position.y = .06; I.add(floor);
+      const fr = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.6, 1.2), M(0xe8ecf0)); fr.position.set(-2.9, 1.3, -2.5); I.add(fr);
+      v.fridgeLed = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 8), BM(0x22cc66)); v.fridgeLed.position.set(-2.5, 2.3, -1.88); I.add(v.fridgeLed);
+      v.bulbMat = BM(0xfff2b0);
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(.22, 12, 12), v.bulbMat); bulb.position.set(-1.4, IH - .55, 1.4); I.add(bulb);
+      const fb = new THREE.Group(); fb.position.set(0, IH - .8, 0); I.add(fb);
+      v.fanG = new THREE.Group(); fb.add(v.fanG); v.fanOm = 0;
+      v.fanG.add(new THREE.Mesh(new THREE.CylinderGeometry(.22, .22, .16, 16), M(0x222222)));
+      for (let k = 0; k < 4; k++) { const h = new THREE.Group(); h.rotation.y = k * Math.PI / 2; const bl = new THREE.Mesh(new THREE.BoxGeometry(1.7, .04, .4), M(0x8b5e34)); bl.position.x = 1.05; h.add(bl); v.fanG.add(h); }
+
+      if (b.own[4]) {
+        const ac = new THREE.Mesh(new THREE.BoxGeometry(2.4, .75, .5), M(0xf2f4f7)); ac.position.set(.2, IH - .95, -3.15); I.add(ac);
+        v.acLed = new THREE.Mesh(new THREE.SphereGeometry(.06, 8, 8), BM(0x22cc66)); v.acLed.position.set(1.2, IH - .9, -2.88); I.add(v.acLed);
+        v.airP = []; for (let j = 0; j < 10; j++) { const a = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 6), BM(0x7fc4ff)); I.add(a); v.airP.push(a); }
+      }
+      if (b.own[5]) {
+        v.heatMat = M(0x777f88); const h = new THREE.Mesh(new THREE.CylinderGeometry(.55, .55, 1.8, 24), v.heatMat); h.position.set(3, .9, -2.6); I.add(h);
+      }
+      if (b.own[2]) {
+        const o = new THREE.Mesh(new THREE.BoxGeometry(1, 1.4, .9), M(0xaebccc)); o.position.set(-1, .7, -2.8); I.add(o);
+        v.o2Led = new THREE.Mesh(new THREE.SphereGeometry(.06, 8, 8), BM(0x22cc66)); v.o2Led.position.set(-.6, 1.15, -2.34); I.add(v.o2Led);
+        v.o2Win = BM(0x9ed0ff); const w = new THREE.Mesh(new THREE.PlaneGeometry(.4, .5), v.o2Win); w.position.set(-1.3, .95, -2.34); I.add(w);
+        const st = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 1.2, 8), M(0x333333)); st.position.set(.6, .6, -3); I.add(st);
+        const mb = new THREE.Mesh(new THREE.BoxGeometry(1.3, .9, .12), M(0x111111)); mb.position.set(.6, 1.6, -3); I.add(mb);
+        const ms = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .75), new THREE.MeshBasicMaterial({ map: ecgTex })); ms.position.set(.6, 1.6, -2.93); I.add(ms);
+        const bed = new THREE.Mesh(new THREE.BoxGeometry(2, .5, 3), M(0xdfe6ee)); bed.position.set(1.7, .3, .7); I.add(bed);
+      }
+
+      /* Parked EV */
+      if (b.own[6]) {
+        const car = new THREE.Group(); car.position.set(b.x - .5, 0, b.side * 3.0); scene.add(car);
+        const cc = [0xc0392b, 0x2980b9, 0xe0e0e0, 0x27ae60, 0xf1c40f][b.i % 5];
+        const cb = new THREE.Mesh(new THREE.BoxGeometry(4.2, .8, 1.8), M(cc)); cb.position.y = .75; cb.castShadow = true; car.add(cb);
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(2.3, .75, 1.6), M(0x1b2638, { roughness: .2 })); cab.position.set(-.2, 1.5, 0); car.add(cab);
+        v.carInd = new THREE.Mesh(new THREE.SphereGeometry(.2, 10, 10), BM(0x666666)); v.carInd.position.set(0, 2.1, 0); car.add(v.carInd);
+        const post = new THREE.Mesh(new THREE.BoxGeometry(.3, 1.4, .3), M(0x444b55)); post.position.set(b.x + 2.8, .7, b.side * 5.3); scene.add(post);
+        v.postLed = new THREE.Mesh(new THREE.SphereGeometry(.1, 8, 8), BM(0x888888)); v.postLed.position.set(b.x + 2.8, 1.5, b.side * 5.3); scene.add(v.postLed);
+      }
+
+      /* Power Lines with Energy Pulses */
+      const x0 = (b.x < 0 ? -1 : 1) * (b.side < 0 ? .6 : .95), zb = b.side * 2;
+      const pts = [new V3(x0, 9, -9), new V3(x0, 9, zb), new V3(b.x, 9, zb), new V3(b.x, H + .8, b.z - b.side * 3)];
+      const cp = new THREE.CurvePath(); for (let k = 0; k < pts.length - 1; k++) cp.add(new THREE.LineCurve3(pts[k], pts[k + 1]));
+      v.lineMat = BM(0xffc94d); scene.add(new THREE.Mesh(new THREE.TubeGeometry(cp, 60, .07, 6, false), v.lineMat));
+      v.path = cp; v.len = cp.getLength();
+      v.pulses = [0, 1, 2].map(k => { const m = new THREE.Mesh(new THREE.SphereGeometry(.24, 8, 8), BM(0xfff3b0)); scene.add(m); return { m, s: k / 3 }; });
+
+      const l = document.createElement('div'); l.className = 'lbl'; l.textContent = '#' + (b.i + 1) + (b.med ? ' ✚' : ''); $('labels').appendChild(l); v.lbl = l;
+      return v;
+    }
+    CITY0.forEach(b => V.push(makeBuilding(b)));
+
+    const selRing = new THREE.Mesh(new THREE.RingGeometry(5.6, 6, 48), BM(0x38bdf8)); selRing.rotation.x = -Math.PI / 2; scene.add(selRing);
+    function applySel() {
+      V.forEach((v, i) => {
+        const on = i === sel;
+        for (const m of [v.bodyMat, v.roofMat]) { m.transparent = on; m.opacity = on ? .14 : 1; m.depthWrite = !on; m.needsUpdate = true; }
+        v.facade.visible = !on; v.int.visible = on;
+      });
+      selRing.position.set(CITY0[sel].x, .1, CITY0[sel].z);
+    }
+    function select(i) { sel = i; applySel(); }
+
+    /* Camera Controller */
+    const cam = { tgt: new V3(0, 3, 0), goal: new V3(0, 3, 0), th: .35, thG: .35, ph: 1, phG: 1, r: 85, rG: 85 };
+    function placeCam() {
+      const s = Math.sin(cam.ph);
+      camera.position.set(cam.tgt.x + cam.r * s * Math.sin(cam.th), cam.tgt.y + cam.r * Math.cos(cam.ph), cam.tgt.z + cam.r * s * Math.cos(cam.th));
+      camera.lookAt(cam.tgt);
+    }
+    let drag = null;
+    cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, moved: 0 }; cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointermove', e => {
+      if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx) + Math.abs(dy);
+      cam.th -= dx * .006; cam.thG = cam.th; cam.ph = Math.max(.2, Math.min(1.5, cam.ph - dy * .005)); cam.phG = cam.ph;
+    });
+    cv.addEventListener('pointerup', e => { if (drag && drag.moved < 5) pick(e); drag = null; });
+    cv.addEventListener('wheel', e => { e.preventDefault(); cam.rG = Math.max(12, Math.min(170, cam.rG * (1 + e.deltaY * .001))); }, { passive: false });
+    const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+    function pick(e) {
+      mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(mouse, camera);
+      const h = ray.intersectObjects(bodies, false)[0]; if (h) select(h.object.userData.idx);
+    }
+    window.addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+    /* Update 3D Visuals */
+    let tAnim = 0;
+    function updateVisuals(dt) {
+      const col = S.collapsed, f = S.f;
+      const k = col ? 0 : Math.max(.25, Math.min(1, (f - 48.5) / 1.5));
+      lampMat.color.setRGB(k, .84 * k, .5 * k); poolMat.opacity = .2 * k; trafoLed.material.color.setHex(col ? 0x333333 : 0x38bdf8);
+
+      S.B.forEach((b, i) => {
+        const v = V[i], powered = b.energized && !col, on = n => powered && b.devs[n].want && b.devs[n].on;
+        v.winMat.color.setHex(powered ? 0xffd27a : 0x0a0e17);
+        v.light.intensity = powered ? 1.1 : 0;
+        v.lineMat.color.setHex(powered ? 0xffc94d : (col ? 0x1a1f2b : 0x8a2222));
+        for (const p of v.pulses) { p.m.visible = powered; if (powered) { p.s = (p.s + dt * 10 / v.len) % 1; p.m.position.copy(v.path.getPointAt(p.s)); } }
+        if (v.signMat) v.signMat.color.setHex(powered ? (b.type === 'clinic' ? 0x22dd77 : 0xffb347) : 0x1a1a1a);
+        if (v.acFan) { v.acOm += ((on(4) ? 16 * (f / 50) : 0) - v.acOm) * Math.min(1, dt / 1.5); v.acFan.rotation.y += v.acOm * dt; }
+        if (v.cross) { v.cross.rotation.y += dt * 1.2; v.crossMat.color.setHex(powered ? 0xff5fa8 : 0x4a1a2c); }
+        if (v.carInd) {
+          const c = on(6) ? 0x22dd66 : (b.devs[6].want ? 0xee3333 : 0x666666);
+          v.carInd.material.color.setHex(c); v.postLed.material.color.setHex(c);
+        }
+        if (i === sel) {
+          v.fanOm += ((on(3) ? 12 * (f / 50) : 0) - v.fanOm) * Math.min(1, dt / 1.5); v.fanG.rotation.y += v.fanOm * dt;
+          v.bulbMat.color.setHex(on(1) ? 0xfff2b0 : 0x333333);
+          v.fridgeLed.material.color.setHex(on(0) ? 0x22cc66 : 0xee3333);
+          if (v.heatMat) { const h = on(5); v.heatMat.color.setHex(h ? 0xd9622b : 0x777f88); v.heatMat.emissive.setHex(h ? 0xff4a10 : 0); }
+          if (v.acLed) {
+            const a = on(4); v.acLed.material.color.setHex(a ? 0x22cc66 : 0xee3333);
+            v.airP.forEach((p, j) => { p.visible = a; if (a) { const q = (tAnim * .5 + j / 10) % 1; p.position.set(-.9 + ((j * 7) % 10) / 10 * 2.2, v.IH - 1.3 - q * 2.4, -2.85 + q * 1.8); } });
+          }
+          if (v.o2Led) { const o = on(2); v.o2Led.material.color.setHex(o ? 0x22cc66 : 0xee3333); v.o2Win.color.setHex(o ? 0x9ed0ff : 0x555d66); drawEcg(o, tAnim); }
+        }
+      });
+    }
+
+    function labels() {
+      const col = S.collapsed;
+      S.B.forEach((b, i) => {
+        const l = V[i].lbl, p = new V3(b.x, b.h + 5.5, b.z).project(camera);
+        if (p.z > 1) { l.style.display = 'none'; return; }
+        l.style.display = 'block'; l.style.left = ((p.x * .5 + .5) * innerWidth) + 'px'; l.style.top = ((-p.y * .5 + .5) * innerHeight) + 'px';
+        const dead = !(b.energized && !col), part = b.devs.some(d => d.want && !d.on);
+        l.style.borderColor = col ? '#6b7280' : dead ? '#ef4444' : part ? '#f59e0b' : '#22c55e';
+        l.style.color = l.style.borderColor;
+      });
+    }
+
+    function chart(cv, data, min, max, color, lines) {
+      const c = cv.getContext('2d'), W = cv.width, H = cv.height; c.clearRect(0, 0, W, H);
+      const X = i => 6 + (W - 12) * (i * DT * REC) / TEND, Y = v => H - 6 - (H - 12) * (Math.min(max, Math.max(min, v)) - min) / (max - min);
+      c.font = '9px Segoe UI';
+      for (const [v, t] of lines) {
+        c.setLineDash([3, 3]); c.strokeStyle = '#475569'; c.beginPath(); c.moveTo(6, Y(v)); c.lineTo(W - 6, Y(v)); c.stroke(); c.setLineDash([]);
+        c.fillStyle = '#94a3b8'; c.fillText(t, 8, Y(v) - 2);
+      }
+      c.strokeStyle = color; c.lineWidth = 2; c.beginPath();
+      data.forEach((v, i) => i ? c.lineTo(X(i), Y(v)) : c.moveTo(X(i), Y(v))); c.stroke();
+    }
+
+    function hud() {
+      const f = S.f, b = S.B[sel], col = S.collapsed, powered = b.energized && !col;
+      $('hz').textContent = col ? 'COLLAPSE' : f.toFixed(2) + ' Hz';
+      $('hz').style.color = col ? '#ef4444' : f >= 49.9 ? '#22c55e' : f >= 49.5 ? '#f59e0b' : '#ef4444';
+
+      const rocof = S.rocof || 0;
+      $('rocof-badge').textContent = 'RoCoF: ' + (rocof > 0 ? '+' : '') + rocof.toFixed(2) + ' Hz/s';
+      $('rocof-badge').style.color = Math.abs(rocof) > 0.5 ? '#ef4444' : (Math.abs(rocof) > 0.2 ? '#f59e0b' : '#38bdf8');
+
+      $('tm').textContent = 't = ' + S.t.toFixed(1) + ' s  |  ' + NAMES[mode] + '  |  Disturbance at t = 5.0 s';
+      const shed = b.devs.filter(d => d.want && !d.on).map(d => d.name);
+      $('msg').textContent = col ? '⚫ GRID COLLAPSE: System blacked out completely'
+        : !b.energized ? '🔴 Feeder Tripped: Whole building unpowered' + (b.med ? ' (O2 Concentrator OFF)' : '')
+          : shed.length ? '🟡 Rakshak Active: Shed non-essential (' + shed.join(', ') + '); Life-Safety Protected'
+            : '🟢 Grid Stable: Normal operational demand';
+
+      let nN = 0, nP = 0, nB = 0, mp = 0, mt = 0;
+      for (const x of S.B) { const dead = !(x.energized && !col); if (dead) nB++; else if (x.devs.some(d => d.want && !d.on)) nP++; else nN++; if (x.med) { mt++; if (!dead) mp++; } }
+      const m = S.M, row = (a, v) => '<tr><td>' + a + '</td><td>' + v + '</td></tr>';
+      $('stat').innerHTML = '<b>Neighborhood Resilience Status</b><br>🟢 Normal: ' + nN + ' &nbsp; 🟡 Partial: ' + nP + ' &nbsp; 🔴 Dark: ' + nB + '<br>✚ Life-safety devices powered: <b>' + mp + ' / ' + mt + '</b>'
+        + '<table>' + row('Frequency Nadir', m.nadir.toFixed(2) + ' Hz') + row('Peak RoCoF', m.rocof.toFixed(2) + ' Hz/s')
+        + row('Recovery to 49.9 Hz', col ? 'Never' : (m.recT === null ? '-' : m.recT.toFixed(1) + ' s'))
+        + row('Total Buildings Cut (Max)', m.black + ' / ' + N) + row('Medical Device Min Lost', m.medMin.toFixed(1) + ' min')
+        + row('Critical Energy Unserved', m.critWh.toFixed(0) + ' Wh') + row('Rebound Peak Load', m.peak ? (m.peak * 100).toFixed(0) + '%' : '-') + '</table>';
+
+      let h = '<b>' + TNAME[b.type] + ' #' + (sel + 1) + '</b> (Feeder ' + (b.feeder + 1) + ')<br><span style="color:#94a3b8">Node MAC: ' + b.mac + '</span>';
+      for (const d of b.devs) {
+        if (!d.own) continue;
+        let st, c;
+        const isLockout = d.isComp && !d.canTurnOn(S.t);
+        if (!d.want) { st = 'IDLE'; c = '#64748b'; }
+        else if (!powered) { st = 'NO POWER'; c = '#ef4444'; }
+        else if (d.on) { st = 'RUNNING'; c = '#22c55e'; }
+        else if (isLockout) { st = 'COMPRESSOR LOCKOUT'; c = '#a855f7'; }
+        else { st = 'SHED BY RAKSHAK'; c = '#f59e0b'; }
+
+        h += '<div class="row"><span>' + d.name + ' <span style="color:#64748b">' + Math.round(d.w) + ' W</span><span class="chip" style="background:' + TIERC[d.tier] + '">' + TIERN[d.tier] + '</span></span><b style="color:' + c + '">' + st + (d.k === 6 && d.want ? ' ' + Math.round(d.charge * 100) + '%' : '') + '</b></div>';
+      }
+      $('info').innerHTML = h;
+      $('log').innerHTML = S.log.length ? S.log.join('<br>') : 'Event log: press play';
+      chart($('cf'), S.hf, 47.2, 50.8, '#38bdf8', [[49.6, '49.6 Rakshak Trip'], [49.2, '49.2 UFLS Stage 1'], [47.5, '47.5 Blackout']]);
+      chart($('cd'), S.hd, 0, 1.4, '#f59e0b', [[1, '1.0 Nominal Load']]);
+    }
+
+    /* Simulation Loop */
+    let last = performance.now(), frameN = 0;
+    function loop(now) {
+      const dt = Math.min(.05, (now - last) / 1000); last = now; tAnim += dt;
+      if (playing) {
+        acc += dt * speed;
+        while (acc >= DT) { if (S.t < TEND) stepSim(); acc -= DT; }
+        if (S.t >= TEND) { playing = false; $('play').textContent = '▶ Play'; }
+      }
+      let dth = cam.thG - cam.th; dth = Math.atan2(Math.sin(dth), Math.cos(dth));
+      cam.th += dth * .08; cam.ph += (cam.phG - cam.ph) * .08; cam.r += (cam.rG - cam.r) * .1; cam.tgt.lerp(cam.goal, .08); placeCam();
+      updateVisuals(dt); labels(); if (frameN++ % 4 === 0) hud();
+      renderer.render(scene, camera); requestAnimationFrame(loop);
+    }
+
+    [['loss', 'lossV'], ['thr', 'thrV'], ['trec', 'trecV'], ['H', 'HV']].forEach(([id, l]) => {
+      $(id).oninput = () => { $(l).textContent = $(id).value; reset(); };
+    });
+
+    $('mode').onchange = reset;
+    $('speed').onchange = () => speed = +$('speed').value;
+    $('restart').onclick = reset;
+    $('play').onclick = () => { if (S.t >= TEND) { reset(); return; } playing = !playing; $('play').textContent = playing ? '⏸ Pause' : '▶ Play'; };
+    $('home').onclick = () => { cam.goal.set(0, 3, 0); cam.rG = 85; cam.thG = .35; cam.phG = 1; };
+    $('focus').onclick = () => { const b = CITY0[sel]; cam.goal.set(b.x, 3, b.z); cam.rG = 17; cam.thG = b.side < 0 ? 0 : Math.PI; cam.phG = 1.1; };
+
+    reset(); applySel(); requestAnimationFrame(loop);
+  </script>
+</body>
+
+</html>
