@@ -35,7 +35,16 @@
     #ctl {
       top: 10px;
       left: 10px;
-      width: 270px;
+      width: 255px;
+      max-height: calc(100vh - 215px);
+      overflow-y: auto;
+    }
+    #ctl::-webkit-scrollbar {
+      width: 4px;
+    }
+    #ctl::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
     }
 
     #ctl label {
@@ -294,17 +303,22 @@
 
   <div class="panel" id="charts">
     <div style="font-weight:700; font-size:11px;">Grid Frequency (Hz)</div>
-    <canvas class="ch" id="cf" width="310" height="95"></canvas>
+    <canvas class="ch" id="cf" width="255" height="80"></canvas>
     <div style="font-weight:700; font-size:11px;">Feeder Demand (1.0 = Pre-event Nominal)</div>
-    <canvas class="ch" id="cd" width="310" height="95"></canvas>
+    <canvas class="ch" id="cd" width="255" height="80"></canvas>
   </div>
 
   <div class="panel" id="info"></div>
   <div class="panel" id="log"></div>
   <div id="labels"></div>
 
-  <!-- Three.js from CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Three.js (Local offline with CDN fallback) -->
+  <script src="three.min.js"></script>
+  <script>
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+    }
+  </script>
   <script>
     const $ = id => document.getElementById(id);
     const V3 = THREE.Vector3;
@@ -749,7 +763,14 @@
         v.winMat.color.setHex(powered ? 0xffd27a : 0x0a0e17);
         v.light.intensity = powered ? 1.1 : 0;
         v.lineMat.color.setHex(powered ? 0xffc94d : (col ? 0x1a1f2b : 0x8a2222));
-        for (const p of v.pulses) { p.m.visible = powered; if (powered) { p.s = (p.s + dt * 10 / v.len) % 1; p.m.position.copy(v.path.getPointAt(p.s)); } }
+        for (const p of v.pulses) {
+          p.m.visible = powered;
+          if (powered && v.len > 0) {
+            p.s = (p.s + dt * 10 / v.len) % 1;
+            const pt = v.path.getPointAt(Math.max(0, Math.min(0.999, p.s)));
+            if (pt) p.m.position.copy(pt);
+          }
+        }
         if (v.signMat) v.signMat.color.setHex(powered ? (b.type === 'clinic' ? 0x22dd77 : 0xffb347) : 0x1a1a1a);
         if (v.acFan) { v.acOm += ((on(4) ? 16 * (f / 50) : 0) - v.acOm) * Math.min(1, dt / 1.5); v.acFan.rotation.y += v.acOm * dt; }
         if (v.cross) { v.cross.rotation.y += dt * 1.2; v.crossMat.color.setHex(powered ? 0xff5fa8 : 0x4a1a2c); }
