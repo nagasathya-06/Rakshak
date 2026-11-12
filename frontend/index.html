@@ -499,8 +499,16 @@
     .metric-worst { color: #f87171; }
 
     /* 3D Label Markers */
-    .lbl {
+    #labels {
       position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .lbl {
+      position: absolute;
       transform: translate(-50%, -50%);
       padding: 2px 7px;
       border-radius: 10px;
@@ -975,7 +983,10 @@
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio || 1); renderer.setSize(innerWidth, innerHeight);
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.domElement.style.cssText = 'position:fixed;inset:0'; document.body.prepend(renderer.domElement);
+    Object.assign(renderer.domElement.style, {
+      position: 'fixed', left: '0', top: '0', zIndex: '0', pointerEvents: 'auto'
+    });
+    document.body.prepend(renderer.domElement);
     const cv = renderer.domElement;
 
     scene.add(new THREE.AmbientLight(0x4a5a80, 0.6));
@@ -1117,12 +1128,28 @@
       camera.lookAt(cam.tgt);
     }
     let drag = null;
-    cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, moved: 0 }; cv.setPointerCapture(e.pointerId); });
-    cv.addEventListener('pointermove', e => {
-      if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx) + Math.abs(dy);
-      cam.th -= dx * .006; cam.thG = cam.th; cam.ph = Math.max(.2, Math.min(1.5, cam.ph - dy * .005)); cam.phG = cam.ph;
+    cv.style.touchAction = 'none';
+    cv.style.cursor = 'grab';
+    window.addEventListener('pointerdown', e => {
+      if (e.target !== cv || e.button !== 0) return;
+      drag = { x: e.clientX, y: e.clientY, moved: 0, pointerId: e.pointerId };
+      cv.style.cursor = 'grabbing';
+      e.preventDefault();
     });
-    cv.addEventListener('pointerup', e => { if (drag && drag.moved < 5) pick(e); drag = null; });
+    window.addEventListener('pointermove', e => {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx) + Math.abs(dy);
+      cam.thG -= dx * .006;
+      cam.phG = Math.max(.2, Math.min(1.5, cam.phG - dy * .005));
+    });
+    function endDrag(e) {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      if (drag.moved < 5) pick(e);
+      drag = null; cv.style.cursor = 'grab';
+    }
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
     cv.addEventListener('wheel', e => { e.preventDefault(); cam.rG = Math.max(12, Math.min(170, cam.rG * (1 + e.deltaY * .001))); }, { passive: false });
     const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
     function pick(e) {
@@ -1167,10 +1194,14 @@
 
     function labels() {
       const col = S.collapsed;
+      const viewport = renderer.domElement.getBoundingClientRect();
+      camera.updateMatrixWorld(true);
       S.B.forEach((b, i) => {
-        const l = V[i].lbl, p = new V3(b.x, b.h + 5.5, b.z).project(camera);
-        if (p.z > 1) { l.style.display = 'none'; return; }
-        l.style.display = 'block'; l.style.left = ((p.x * .5 + .5) * innerWidth) + 'px'; l.style.top = ((-p.y * .5 + .5) * innerHeight) + 'px';
+        const l = V[i].lbl, p = new V3(b.x, b.h + 1.4, b.z).project(camera);
+        const x = viewport.left + (p.x * .5 + .5) * viewport.width;
+        const y = viewport.top + (-p.y * .5 + .5) * viewport.height;
+        if (p.z > 1 || p.x < -1 || p.x > 1 || p.y < -1 || p.y > 1) { l.style.display = 'none'; return; }
+        l.style.display = 'block'; l.style.left = x + 'px'; l.style.top = y + 'px';
         const dead = !(b.energized && !col), part = b.devs.some(d => d.want && !d.on);
         l.style.borderColor = col ? '#6b7280' : dead ? '#ef4444' : part ? '#f59e0b' : '#22c55e';
         l.style.color = l.style.borderColor;
